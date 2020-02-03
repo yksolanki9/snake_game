@@ -1,6 +1,6 @@
 #include<iostream>
-// #include "keybit"
-// #include<ncurses.h>
+#include "kbhit.h"
+#include "getch.h"
 
 /*Used for sleep function */
 #include <chrono>
@@ -8,80 +8,6 @@
 
 using namespace std;
 
-
-/* keybit function in linux */
-#include <stdio.h>
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-int kbhit(void)
-{
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);    
-    ch = getchar(); 
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf); 
-    if(ch != EOF)
-    {
-        ungetc(ch, stdin);
-        return 1;
-    }   
-    return 0;
-}
-
-/*getch() function in linux */
-#include <termios.h>
-#include <stdio.h>
-
-static struct termios old, new_char;
-
-/* Initialize new terminal i/o settings */
-void initTermios(int echo) 
-{
-  tcgetattr(0, &old); //grab old terminal i/o settings
-  new_char = old; //make new settings same as old settings
-  new_char.c_lflag &= ~ICANON; //disable buffered i/o
-  new_char.c_lflag &= echo ? ECHO : ~ECHO; //set echo mode
-  tcsetattr(0, TCSANOW, &new_char); //apply terminal io settings
-}
-
-/* Restore old terminal i/o settings */
-void resetTermios(void) 
-{
-  tcsetattr(0, TCSANOW, &old);
-}
-
-/* Read 1 character - echo defines echo mode */
-char getch_(int echo) 
-{
-  char ch;
-  initTermios(echo);
-  ch = getchar();
-  resetTermios();
-  return ch;
-}
-
-/* 
-Read 1 character without echo 
-getch() function definition.
-*/
-char getch(void) 
-{
-  return getch_(0);
-}
-
-
-
-
-// /*Main program starts here */
 bool isGameOver;
 const int width = 20;
 const int height = 20;
@@ -91,13 +17,6 @@ enum eDirection {STOP, LEFT, RIGHT, UP, DOWN};
 eDirection dir; 
 
 void setup(){
-    // /* Initialize the curses environment*/
-    // initscr();
-    // cbreak();
-    // noecho();
-    // clear();
-    // curs_set(false);
-
     /* Setup the game*/
     isGameOver = false;
     dir = STOP;
@@ -146,9 +65,8 @@ void draw_map(){
 
 void user_input(){
     if(kbhit()){
-        int c = 0;
-        switch(c = getch()){
-            case '75':
+        switch(getch()){
+            case 'a':
                 dir = LEFT;
                 break;
             case 'd':
@@ -164,7 +82,6 @@ void user_input(){
                 isGameOver = true;
                 break;
         }
-        // sleep(10);
     }
 }
 
@@ -227,13 +144,11 @@ void controller(){
 
 int main(){
     setup();
-    // draw_map();
     while(!isGameOver){
         draw_map();
         user_input();
         controller();
         this_thread::sleep_for(chrono::milliseconds(100));
     }
-    // endwin();
     return 0;
 }
